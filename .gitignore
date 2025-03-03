@@ -12,3 +12,10 @@ Cargo.lock
 # nako blog
 .env
 nako.log
+target
+*.sublime*
+.vscode
+.idea/*
+*/.idea/*
+.env.local
+.DS_Store

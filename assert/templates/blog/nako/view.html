@@ -10,11 +10,14 @@
     {% else %}
         <a href="{{ url_for(name='blog.cate-index') | safe }}">{{ cate_data.name | default(value="文章未分类") }}</a>
     {% endif %}
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.css') | safe }}">
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.preview.css') | safe }}">
+    <link rel="stylesheet" href="{{ assert(path='admin/component/katex/katex.min.css') | safe }}"/>
 {% endblock breadcrumb %}
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 blog-main">
+    <div class="col-md-10 blog-main">
         <article class="blog-post">
             {% if art.cover %}
             <header>
@@ -37,7 +40,10 @@
                         {% endfor %}
                     {% endif %}
                 </div>
-                <div class="view-content">{{ art.content | safe }}</div>
+                <textarea id="src-content" style="display: none"> {{ art.content | safe }}  </textarea>
+                <div id="view-content">
+                    <textarea name="content" style="display:none;"> </textarea>
+                </div>
             </div>
         </article>
 
@@ -117,30 +123,190 @@
         </aside>
     </div>
 
-    <aside class="col-md-4 blog-aside">
+    <aside class="col-md-2 blog-aside">
         {% include "blog/nako/_right.html" %}
     </aside>
 </div>
 {% endblock content %}
 
+
 {% block script_append %}
+<script src="{{ assert(path='admin/component/jquery/3.6.0.jquery.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/editormd.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/marked.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/prettify.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/raphael.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/underscore.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/sequence-diagram.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/flowchart.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/editor.md/lib/jquery.flowchart.min.js') | safe }}"></script>
+<script src="{{ assert(path='admin/component/katex/katex.min.js') | safe }}"></script>
+
 <script>
-$(function() {
-    $(".js-save-btn").click(function() {
-        var form = $(".comment-form");
+    var editor = editormd("view-content", {
+        tex: true,
+        htmlDecode : true,
+        path: "{{ assert(path='admin/component/editor.md/lib/') | safe }}", // Editor.md 依赖路径
+        width: "100%",
+        height: "auto",
+        autoHeight : true,
+        theme : "default",
+        readOnly : true,
+        previewTheme : "default",
+        watch : true,
+        preview: true,    // 开启预览
+        // toolbar  : false,             //关闭工具栏
+        emoji : true,
+        taskList : true,
+        tocm : true,         // Using [TOCM]
+        tex : true,                   // 开启科学公式TeX语言支持，默认关闭
+        flowChart : true,             // 开启流程图支持，默认关闭
+        sequenceDiagram : true,       // 开启时序/序列图支持，默认关闭,
+        toolbarIcons: "simple", // 工具栏模式
+        onload: function () {
+            console.log("Editor.md 加载完成1",$(".editormd-preview-container").height(), $(".editormd-preview").height(), $("#view-content").height());
+            this.setMarkdown($("#src-content").val());
+            // console.log("Editor.md dd ",  $(".editormd-preview-container").height());
+            // $(".editormd-preview").height($(".editormd-preview-container").height());
+            //
+            // // this.resize(); // 通知 Editor.md 调整布局
+            //
+            $("#view-content").css("border", "none");
+            $(".CodeMirror").remove();
+            $(".editormd-preview").width($(".editormd-preview").width() * 2);
+            $(".editormd-preview").css("position", "relative");
+            $(".editormd-preview").css("border", "none");
+            $(".editormd-preview").css("overflow", "hidden");
 
-        $.ajax({
-            url: "{{ url_for(name='blog.comment-create') | safe }}",
-            data: form.serialize(),
-            dataType:'json',
-            type:'post',
-            success:function(result) {
-                alert(result.message);
-            }
-        });
 
-        return false;
+        },
     });
-});
+
+    function updateEditorWidth() {
+        console.log("Editor.md 加载完成2",$(".editormd-preview-container").height(), $(".editormd-preview").height(), $("#view-content").height());
+        // $(".editormd-preview").height($(".editormd-preview-container").height());
+
+        $("#view-content").css("border", "none");
+        $(".CodeMirror").remove();
+        $(".editormd-preview").width($(".editormd-preview").width() * 2);
+        $(".editormd-preview").css("position", "relative");
+        $(".editormd-preview").css("border", "none");
+        $(".editormd-preview").css("overflow", "hidden ");
+    }
+
+    // 初始化时调用一次
+    // setTimeout(updateEditorWidth, 1000);
+    // 窗口大小变化时重新计算
+    $(window).resize(function() {
+        // 使用 setTimeout 延迟执行，确保浏览器完成布局调整
+        setTimeout(updateEditorWidth, 100);
+    });
+
+    bindImageClick();
+
+    function bindImageClick() {
+        // 绑定图片点击事件
+        $(document).on("click", ".editormd-preview-container img", function() {
+            var imgSrc = $(this).attr("src");
+            openImageModal(imgSrc);
+        });
+    }
+
+    function openImageModal(imgSrc) {
+        // 动态创建模态框
+        var modal = document.createElement("div");
+        modal.className = "modal";
+        modal.style.display = "block";
+
+        // 动态创建关闭按钮
+        var closeBtn = document.createElement("span");
+        closeBtn.className = "close";
+        closeBtn.innerHTML = "&times;";
+
+        // 动态创建图片
+        var modalImg = document.createElement("img");
+        modalImg.className = "modal-content";
+        modalImg.src = imgSrc;
+
+        // 将关闭按钮和图片添加到模态框中
+        modal.appendChild(closeBtn);
+        modal.appendChild(modalImg);
+
+        // 将模态框添加到 body 中
+        document.body.appendChild(modal);
+
+        // 绑定关闭事件
+        closeBtn.onclick = function() {
+            document.body.removeChild(modal);
+        };
+
+        // 点击模态框外部关闭
+        modal.onclick = function(event) {
+            if (event.target == modal) {
+                document.body.removeChild(modal);
+            }
+        };
+
+        // 图片拖动功能
+        let isDragging = false;
+        let startX = 0, startY = 0, translateX = 0, translateY = 0;
+
+        modalImg.onmousedown = function(event) {
+            isDragging = true;
+            startX = event.clientX - translateX;
+            startY = event.clientY - translateY;
+            modalImg.style.cursor = "grabbing";
+            modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            event.preventDefault(); // 防止默认行为（如文本选中）
+        };
+
+        document.onmousemove = function(event) {
+            if (isDragging) {
+                translateX = event.clientX - startX;
+                translateY = event.clientY - startY;
+                modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            }
+        };
+
+        document.onmouseup = function() {
+            if (isDragging) {
+                isDragging = false;
+                modalImg.style.cursor = "grab";
+            }
+        };
+
+        // 双击图片放大/缩小
+        let scale = 1;
+        modalImg.ondblclick = function(event) {
+            scale = scale === 1 ? 2 : 1;
+            modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        };
+
+        // 滚轮缩放图片
+        modalImg.onwheel = function(event) {
+            event.preventDefault();
+            scale += event.deltaY * -0.01;
+            scale = Math.min(Math.max(0.5, scale), 3); // 限制缩放范围
+            modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        };
+    }
+
+
+    $(function() {
+        $(".js-save-btn").click(function() {
+            var form = $(".comment-form");
+            $.ajax({
+                url: "{{ url_for(name='blog.comment-create') | safe }}",
+                data: form.serialize(),
+                dataType:'json',
+                type:'post',
+                success:function(result) {
+                    alert(result.message);
+                }
+            });
+
+            return false;
+        });
+    });
 </script>
 {% endblock script_append %}

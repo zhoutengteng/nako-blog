@@ -47,15 +47,15 @@
                     
                     <div class="layui-form-item">
                         <label class="layui-form-label">内容</label>
-                        <div class="layui-input-block">
-                            <textarea name="content" placeholder="请输入内容" id="content" class="layui-textarea js-content">{{ data.content }}</textarea>
-                        </div>
-                    </div>   
+                        <textarea name="content" placeholder="请输入内容" id="content" style=" display:none" class="layui-textarea js-content"> {{ data.content }}  </textarea>
+                        <textarea name="html_content" style="display:none;" class="layui-textarea js-content html_content"> </textarea>
+                        <iframe id="editor-iframe" allowfullscreen src="{{ url_for(name='admin.art-editor') | safe }}"> </iframe>
+                    </div>
     
                     <div class="layui-form-item">
                         <label class="layui-form-label">简介</label>
                         <div class="layui-input-block">
-                            <textarea name="brief" placeholder="请输入简介" class="layui-textarea">{{ data.brief }}</textarea>
+                            <textarea name="brief" placeholder="请输入简介" class="layui-textarea"> {{ data.brief }}</textarea>
                         </div>
                     </div>
 
@@ -181,6 +181,7 @@
 
     <script src="{{ assert(path='admin/component/layui/layui.js') | safe }}"></script>
     <script src="{{ assert(path='admin/component/pear/pear.js') | safe }}"></script>
+
     <script>
     layui.extend({
         tagsinput: 'tagsinput/tagsinput',
@@ -190,28 +191,47 @@
         var tinymce = layui.tinymce;
         var laydate = layui.laydate;
         var upload = layui.upload;
+        // var edit2 = tinymce.render({
+        //     elem: "#content",
+        //     toolbar: true,
+        //     menubar: true,
+        //     height: 400,
+        //     form: {
+        //         name: 'file',
+        //     },
+        //     images_upload_url: "{{ url_for(name='admin.upload-image') | safe }}",
+        //     success: function(res, succFun, failFun) {
+        //         if (res['code'] == 0) {
+        //             succFun(res['data'][0]['url']);
+        //         } else {
+        //             failFun(res['message']);
+        //         }
+        //     },
+        // });
+        // edit2.on("change", function() {
+        //     edit2.save();
+        // });
+        function updateEditorWidth() {
+            var formItem = $('#editor-iframe').closest('.layui-form-item');
+            // 获取当前组中的 label
+            var label = formItem.find('.layui-form-label');
+            // 获取 layui-form-item 的总宽度
+            var formItemWidth = formItem.outerWidth();
+            // 获取 label 的宽度
+            var labelWidth = label.outerWidth();
+            // 计算 markdown-editor 的宽度
+            var editorWidth = formItemWidth - labelWidth - 4;
+            $('#editor-iframe').width(editorWidth);
+            $('#editor-iframe').height(530);
+        }
+        // 初始化时调用一次
+        updateEditorWidth();
+        // 窗口大小变化时重新计算
+        $(window).resize(function() {
+            // 使用 setTimeout 延迟执行，确保浏览器完成布局调整
+            setTimeout(updateEditorWidth, 100);
+        });
 
-        var edit = tinymce.render({
-            elem: "#content",
-            toolbar: true,
-            menubar: true,
-            height: 400,
-            form: {
-                name: 'file',
-            },
-            images_upload_url: "{{ url_for(name='admin.upload-image') | safe }}",
-            success: function(res, succFun, failFun) {
-                if (res['code'] == 0) {
-                    succFun(res['data'][0]['url']);
-                } else {
-                    failFun(res['message']);
-                }
-            },
-        });
-        edit.on("change", function() {
-            edit.save();
-        });
-            
         // 标签输入
         var elem = ".tags-item";
         var tags = $(elem);
@@ -234,12 +254,14 @@
 
         // 上传图片
         upload.render({
-            elem: '#preview_img' , 
-            url: "{{ url_for(name='admin.upload-image') | safe }}", 
-            size: 50 * 1024, 
+            elem: '#preview_img' ,
+            url: "{{ url_for(name='admin.upload-image') | safe }}",
+            size: 50 * 1024,
             auto: false, //不自动上传
             bindAction: '#upload_img', //上传绑定到隐藏按钮
+            field: 'editormd-image-file', // 修改上传文件的 key 值
             choose: function (obj) {
+                $('#credential_hide').attr('type', 'hidden');
                 $("#upload_img_save").removeAttr('disabled');
 
                 obj.preview(function (index, file, result) {
@@ -247,23 +269,23 @@
                     $('#colla_img').find('img').remove();
                     $('#colla_img').append('<a href="#"><img id="showImg" src="' + result + '" width="370px"></a>');
                 });
-            }, 
+            },
             done: function (res) {
                 if (res['code'] == 0) {
                     layer.msg(res['message']);
-
+                    $('#credential_hide').attr('type', 'text');
                     $('#credential_hide').val(res['data'][0]['url']);
                 } else {
                     layer.msg(res['message'], {icon: 5});
                 }
-            }, 
+            },
             error: function (index, upload) {
                 layer.msg('上传失败！' + index, {icon: 5});
             }
-        }); 
+        });
 
         $('#upload_img_save').click(function () {
-            $(this).attr({'disabled': 'disabled'});
+            $(this).attr({'disabled': 'enabled'});
             $('#upload_img').click();
         });
         

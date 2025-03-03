@@ -20,7 +20,6 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
                 message
             ))
         });
-
     let rust_log = config::section::<String>("app", "rust_log", "error".to_string());
     let logging_level = app::get_log_level(rust_log);
 

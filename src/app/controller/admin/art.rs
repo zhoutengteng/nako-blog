@@ -197,6 +197,7 @@ pub async fn create_save(
             user_id:  user_id,
             title:    params.title.clone(),
             content:  "".to_string(),
+            html_content: "".to_string(),
             views:    Some(0),
             status:   Some(params.status),
             add_time: Some(add_time),
@@ -252,6 +253,7 @@ pub struct UpdateForm {
     keywords: String,
     description: String,
     content: String,
+    html_content: String,
     brief: String,
     tags: String,
     from: String,
@@ -268,6 +270,8 @@ pub struct UpdateValidate {
     title: Option<String>,
     #[validate(required(message = "内容不能为空"))]
     content: Option<String>,
+    #[validate(required(message = "内容不能为空"))]
+    html_content: Option<String>,
     #[validate(required(message = "简介不能为空"))]
     brief: Option<String>,
     #[validate(required(message = "状态不能为空"))]
@@ -290,6 +294,7 @@ pub async fn update_save(
         cate_id: Some(params.cate_id.clone()),
         title: Some(params.title.clone()),
         content: Some(params.content.clone()),
+        html_content: Some(params.html_content.clone()),
         brief: Some(params.brief.clone()),
         status: Some(params.status.clone()),
         add_time: Some(params.add_time.clone()),
@@ -317,6 +322,7 @@ pub async fn update_save(
             description: Some(params.description.clone()),
             cover:       Some(params.cover.clone()),
             content:     params.content.clone(),
+            html_content:params.html_content.clone(),
             brief:       Some(params.brief.clone()),
             tags:        Some(params.tags.clone()),
             from:        Some(params.from.clone()),
@@ -363,6 +369,15 @@ pub async fn delete(
 
     Ok(nako_http::success_json("删除成功", ""))
 }
+
+pub async fn editor(
+    state: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
+    let mut view = state.view.clone();
+    let ctx = nako_http::view_data();
+    Ok(nako_http::view(&mut view, "admin/art/editor.html", &ctx))
+}
+
 
 // ==========================
 

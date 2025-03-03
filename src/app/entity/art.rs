@@ -24,6 +24,8 @@ pub struct Model {
     pub cover: Option<String>,
     #[sea_orm(column_type = "Text")]
     pub content: String,
+    #[sea_orm(column_type = "Text")]
+    pub html_content: String,
     pub brief: Option<String>,
     pub tags: Option<String>,
     pub from: Option<String>,

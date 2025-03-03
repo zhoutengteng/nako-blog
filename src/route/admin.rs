@@ -146,6 +146,11 @@ pub fn route(cfg: &mut web::ServiceConfig) {
                             .route(web::post().to(art::delete))
                             .name("admin.art-delete"),
                     )
+                    .service(
+                        web::resource("/editor")
+                            .route(web::get().to(art::editor))
+                            .name("admin.art-editor"),
+                    )
             )
             .service(
                 // 分类

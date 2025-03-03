@@ -146,13 +146,14 @@ pub async fn file(
 
 #[derive(Debug, MultipartForm)]
 pub struct ImageForm {
-    #[multipart(rename = "file")]
+    #[multipart(rename = "editormd-image-file")]
     files: Vec<TempFile>,
 }
 
 #[derive(Serialize)]
 pub struct ImageData {
     id: u32,
+    name: String,
     url: String,
 }
 
@@ -163,9 +164,7 @@ pub async fn image(
     MultipartForm(form): MultipartForm<ImageForm>,
 ) -> Result<HttpResponse, Error> {
     let db = &state.db;
-
     let dir = upload_path("".to_string());
-
     if !path::Path::new(dir.as_str()).exists() {
         fs::create_dir_all(dir.as_str())?;
     }
@@ -187,7 +186,6 @@ pub async fn image(
 
         let ext = utils::get_extension(file_name.clone().as_str());
         let name = format!("/images/{}.{}", utils::uuid(), ext);
-
         let path = upload_path(name.clone());
         let url = upload_url(name.clone());
 
@@ -200,20 +198,29 @@ pub async fn image(
 
         let md5 = utils::md5(contents.as_str());
         let size = buffer.len() as u64;
-
         // 判断是否有相同
         let attach_data = attach::AttachModel::find_by_md5(db, md5.as_str()).await.unwrap_or_default().unwrap_or_default();
         if attach_data.id > 0 {
             res.push(ImageData{
                 id:  attach_data.id,
                 url: upload_url(attach_data.path),
+                name: file_name.clone(),
             });
-
             continue;
         }
+        // if f.file.persist(path.clone()).is_err() {
+        //     return Ok(nako_http::error_json("图片存在，持久化失败"));
+        // }
 
-        if f.file.persist(path.clone()).is_err() {
-            return Ok(nako_http::error_json("上传失败"));
+        let temp_path = f.file.into_temp_path();
+        // 如果直接持久化失败，手动复制文件
+        if let Err(e) = fs::copy(&temp_path, &path) {
+            return Ok(nako_http::error_json("图片存在，持久化失败"));
+        }
+
+        // 复制成功后删除临时文件
+        if let Err(e) = fs::remove_file(&temp_path) {
+            return Ok(nako_http::error_json("临时文件删除失败"));
         }
 
         let create_data = attach::AttachModel::create(db, attach_entity::Model{
@@ -228,20 +235,20 @@ pub async fn image(
                 add_ip:   add_ip.clone(),
                 ..entity::default()
             }).await;
+        println!("ddddddddd111134444444444444444 {:?}", create_data);
         if let Ok(data) = create_data {
             if let Ok(data_model) = data.try_into_model() {
                 res.push(ImageData{
                     id:  data_model.id,
-                    url: url,
+                    url : url,
+                    name: file_name.clone()
                 });
             }
         } else {
             if let Ok(_) = fs::remove_file(path.clone()) {}
-
             return Ok(nako_http::error_json("上传失败"));
         }
     }
-
     Ok(nako_http::success_json("上传成功", res))
 }
 

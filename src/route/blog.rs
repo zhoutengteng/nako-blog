@@ -1,4 +1,4 @@
-use actix_web::web;
+  use actix_web::web;
 use actix_web_lab::middleware::from_fn;
 
 use crate::app::controller::blog::{

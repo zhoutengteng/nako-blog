@@ -76,7 +76,8 @@ pub async fn start() -> std::io::Result<()> {
 
         for file in embed::Templates::iter() {
             let filename = file.as_ref();
-            view.add_raw_template(filename.clone(), embed::get_tpl_data(filename.clone()).as_str()).unwrap_or_default();
+            let e = view.add_raw_template(filename.clone(), embed::get_tpl_data(filename.clone()).as_str());
+            let e = e.unwrap();
         }
     } else {
         view = Tera::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assert/templates/**/*")).unwrap_or_default();
@@ -120,7 +121,7 @@ pub async fn start() -> std::io::Result<()> {
                 web::Data::new(state.clone()),
             )
             .app_data(
-                web::FormConfig::default()
+                web::FormConfig::default().limit(2_usize.pow(20))
                     .error_handler(error::form_parser_error)
                     .clone(),
             )

@@ -37,7 +37,7 @@ pub fn get_log_level(name: String) -> log::LevelFilter {
 pub fn upload_path(name: String) -> String {
     let path = config::section::<String>("attach", "upload_path", "./storage/upload".to_string());
 
-    format!("{}{}", path, name)
+    format!("{}{}",path, name)
 }
 
 pub fn upload_url(name: String) -> String {

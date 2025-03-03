@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑页</title>
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.css') | safe }}">
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.preview.css') | safe }}">
+    <link rel="stylesheet" href="{{ assert(path='admin/component/katex/katex.min.css') | safe }}"/>
+    <style>
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.9);
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80%;
+            max-height: 80%;
+            transition: transform 0.25s ease;
+            cursor: grab;
+        }
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="markdown-editor" class="layui-input-block">
+        <textarea name="content" placeholder="请输入内容" id="content" class="layui-textarea js-content">  </textarea>
+    </div>
+
+    <script src="{{ assert(path='admin/component/jquery/3.6.0.jquery.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/editormd.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/marked.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/prettify.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/raphael.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/underscore.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/sequence-diagram.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/flowchart.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/editor.md/lib/jquery.flowchart.min.js') | safe }}"></script>
+    <script src="{{ assert(path='admin/component/katex/katex.min.js') | safe }}"></script>
+
+    <script>
+        // var formItem = $('#markdown-editor').closest('.layui-form-item');
+        // // 获取当前组中的 label
+        // var label = formItem.find('.layui-form-label');
+        // // 获取 layui-form-item 的总宽度
+        // var formItemWidth = formItem.outerWidth();
+        // // 获取 label 的宽度
+        // var labelWidth = label.outerWidth();
+        // // 计算 markdown-editor 的宽度
+        // var editorWidth = formItemWidth - labelWidth - 2;
+        var editor = editormd("markdown-editor", {
+            tex: true,
+            htmlDecode : true,
+            path: "{{ assert(path='admin/component/editor.md/lib/') | safe }}", // Editor.md 依赖路径
+            width: "100%",
+            height: 500,
+            theme : "default",
+            previewTheme : "default",
+            editorTheme : "default",
+            searchReplace : true,
+            saveHTMLToTextarea: true,
+            // watch : true,
+            syncScrolling: "single",
+            emoji : true,
+            taskList : true,
+            toc: true,
+            tocm : true,         // Using [TOCM]
+            tex : true,                   // 开启科学公式TeX语言支持，默认关闭
+            flowChart : true,             // 开启流程图支持，默认关闭
+            sequenceDiagram : true,       // 开启时序/序列图支持，默认关闭,
+            imageUpload : true,
+            imageUploadURL: "{{ url_for(name='admin.upload-image') | safe }}",
+            images_upload_method: "POST",
+            onload: function () {
+                var parentDocument = window.parent.document;
+                this.setMarkdown($(parentDocument.body).find("#content").val());
+                $('[name="fullscreen"]').click();
+                console.log("Editor.md 加载完成");
+            },
+            onchange: function() {
+                // const parent  = $(".editormd-preview"); // .prop("outerHTML")
+                // const children = parent.children(); // 获取所有子元素
+                // let result = "";
+                // // 遍历子元素
+                // children.each(function() {
+                //     result += $(this).prop("outerHTML") + "\n";
+                // });
+                // $(".html_content").text(result);
+                // console.log(result);
+                var parentDocument = window.parent.document;
+                $(parentDocument.body).find("#content").val(this.getMarkdown());
+                console.log("local ", this.getMarkdown());
+                console.log("copy to ", $(parentDocument.body).find("#content").val());
+
+                bindImageClick();
+            }
+        });
+
+        function bindImageClick() {
+            // 绑定图片点击事件
+            $(document).on("click", ".editormd-preview-container img", function() {
+                var imgSrc = $(this).attr("src");
+                openImageModal(imgSrc);
+            });
+        }
+
+        function openImageModal(imgSrc) {
+            // 动态创建模态框
+            var modal = document.createElement("div");
+            modal.className = "modal";
+            modal.style.display = "block";
+
+            // 动态创建关闭按钮
+            var closeBtn = document.createElement("span");
+            closeBtn.className = "close";
+            closeBtn.innerHTML = "&times;";
+
+            // 动态创建图片
+            var modalImg = document.createElement("img");
+            modalImg.className = "modal-content";
+            modalImg.src = imgSrc;
+
+            // 将关闭按钮和图片添加到模态框中
+            modal.appendChild(closeBtn);
+            modal.appendChild(modalImg);
+
+            // 将模态框添加到 body 中
+            document.body.appendChild(modal);
+
+            // 绑定关闭事件
+            closeBtn.onclick = function() {
+                document.body.removeChild(modal);
+            };
+
+            // 点击模态框外部关闭
+            modal.onclick = function(event) {
+                if (event.target == modal) {
+                    document.body.removeChild(modal);
+                }
+            };
+
+            // 图片拖动功能
+            let isDragging = false;
+            let startX = 0, startY = 0, translateX = 0, translateY = 0;
+
+            modalImg.onmousedown = function(event) {
+                isDragging = true;
+                startX = event.clientX - translateX;
+                startY = event.clientY - translateY;
+                modalImg.style.cursor = "grabbing";
+                modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                event.preventDefault(); // 防止默认行为（如文本选中）
+            };
+
+            document.onmousemove = function(event) {
+                if (isDragging) {
+                    translateX = event.clientX - startX;
+                    translateY = event.clientY - startY;
+                    modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                }
+            };
+
+            document.onmouseup = function() {
+                if (isDragging) {
+                    isDragging = false;
+                    modalImg.style.cursor = "grab";
+                }
+            };
+
+            // 双击图片放大/缩小
+            let scale = 1;
+            modalImg.ondblclick = function(event) {
+                scale = scale === 1 ? 2 : 1;
+                modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            };
+
+            // 滚轮缩放图片
+            modalImg.onwheel = function(event) {
+                event.preventDefault();
+                scale += event.deltaY * -0.01;
+                scale = Math.min(Math.max(0.5, scale), 3); // 限制缩放范围
+                modalImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            };
+        }
+        // 上传图片的函数
+        function uploadImage(blob) {
+            const formData = new FormData();
+            formData.append('editormd-image-file', blob, 'paste_image.png'); // 'file' 是后端接收的字段名
+            // 使用 Fetch API 发送请求
+            fetch("{{ url_for(name='admin.upload-image') | safe }}", {
+                method: 'POST',
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(res => {
+                    // 上传成功后的回调
+                    if (res.code === 0) {
+                        // 获取当前光标的位置
+                        var cursor = editor.getCursor();
+                        // 在光标所在行插入新行
+                        editor.replaceSelection("![" + res['data'][0]['name'] + "]" + "(" + res['data'][0]['url'] + ")");
+                        // 将光标移动到新插入的行
+                        editor.setCursor({
+                            line: cursor.line + 1, // 光标移动到新插入的行的下一行
+                            ch: 0
+                        });
+                        // 聚焦编辑器
+                        editor.focus();
+                        console.log('服务器返回:', res);
+                    } else {
+                        // document.getElementById('uploadStatus').innerText = '上传失败: ' + res.msg;
+                    }
+                })
+                .catch(error => {
+                    // 上传失败的回调
+                    // document.getElementById('uploadStatus').innerText = '上传失败，请重试！';
+                    console.error('上传失败:', error);
+                });
+        }
+
+
+        // 监听 paste 事件
+        document.addEventListener('paste', function (event) {
+
+            const markdown = editor.getHTML();
+            console.log("Markdown 内容：", markdown);
+
+            // const iframe = $('#editor-iframe')[0]; // 获取 iframe 的 DOM 元素
+            // const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+            // console.log("frame ", $(iframeDocument.body).find("#content").val());
+
+            const clipboardItems = event.clipboardData.items;
+            // 遍历剪贴板中的每一项
+            for (const item of clipboardItems) {
+                if (item.type.indexOf('image') !== -1) {
+                    const blob = item.getAsFile();
+                    const imageUrl = URL.createObjectURL(blob);
+                    // 使用 Layui 的 upload 模块上传图片
+                    uploadImage(blob);
+                    break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

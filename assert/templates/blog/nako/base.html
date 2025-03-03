@@ -8,6 +8,10 @@
     <meta name="viewport" content="width=device-width">
 
     {% block head %}
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.css') | safe }}">
+    <link rel="stylesheet" href="{{ assert(path='admin/component/editor.md/css/editormd.preview.css') | safe }}">
+<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">-->
+
     <!-- Bootstrap styles -->
     <link rel="stylesheet" href="{{ assert(path='blog/nako/css/bootstrap.min.css') | safe }}">
 
@@ -67,6 +71,18 @@
         <script src="{{ assert(path='blog/nako/js/jquery.min.js') | safe }}"></script>
         <script src="{{ assert(path='blog/nako/js/bootstrap.min.js') | safe }}"></script>
         <script src="{{ assert(path='blog/nako/js/modernizr.js') | safe }}"></script>
+
+
+
+        <script src="{{ assert(path='admin/component/editor.md/editormd.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/marked.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/prettify.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/raphael.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/underscore.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/sequence-diagram.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/flowchart.min.js') | safe }}"></script>
+        <script src="{{ assert(path='admin/component/editor.md/lib/codemirror/codemirror.min.js') | safe }}"></script>
+<!--        <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>-->
     {% endblock script %}
     {% block script_append %}{% endblock script_append %}
 
